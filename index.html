@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>连连看游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .game-header {
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .score, .time, .pairs {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #495057;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 2px;
+            background: #343a40;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .tile {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+            font-size: 1.5em;
+            user-select: none;
+            border: 2px solid transparent;
+        }
+
+        .tile:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .tile.selected {
+            border: 3px solid #ffd700;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+            transform: scale(1.1);
+        }
+
+        .tile.empty {
+            background: transparent;
+            cursor: default;
+        }
+
+        .tile.empty:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .new-game-btn {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+
+        .new-game-btn:hover {
+            background: linear-gradient(135deg, #218838, #1ea080);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+
+        .hint-btn {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            color: white;
+        }
+
+        .hint-btn:hover {
+            background: linear-gradient(135deg, #138496, #117a8b);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, #6f42c1, #5a67d8);
+            color: white;
+        }
+
+        .upload-btn:hover {
+            background: linear-gradient(135deg, #5a67d8, #4c63d2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(111, 66, 193, 0.3);
+        }
+
+        .photo-manager {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .photo-manager > div {
+            background: white;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .photo-manager h3 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+            min-height: 200px;
+        }
+
+        .photo-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 3px solid #dee2e6;
+            transition: all 0.3s;
+        }
+
+        .photo-item:hover {
+            border-color: #007bff;
+            transform: scale(1.05);
+        }
+
+        .photo-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .photo-item .remove-btn {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .photo-actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .tile.photo-tile {
+            background: transparent;
+            padding: 2px;
+            border: 2px solid #dee2e6;
+        }
+
+        .tile.photo-tile img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .tile.photo-tile:hover {
+            border-color: #007bff;
+        }
+
+        .tile.photo-tile.selected {
+            border-color: #ffd700;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+        }
+
+        .game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .game-over-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+
+        .game-over h2 {
+            color: #28a745;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        .connection-line {
+            position: absolute;
+            height: 3px;
+            background: linear-gradient(90deg, #ffd700, #ffed4e);
+            border-radius: 2px;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 20px;
+            }
+            
+            .tile {
+                width: 40px;
+                height: 40px;
+                font-size: 1.2em;
+            }
+            
+            .game-board {
+                gap: 1px;
+                padding: 5px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <h1>🎮 连连看游戏</h1>
+            <div class="game-info">
+                <div class="score">得分: <span id="score">0</span></div>
+                <div class="time">时间: <span id="time">00:00</span></div>
+                <div class="pairs">剩余: <span id="pairs">0</span>对</div>
+            </div>
+        </div>
+        
+        <div class="game-board" id="gameBoard"></div>
+        
+        <div class="controls">
+            <button class="new-game-btn" onclick="startNewGame()">新游戏</button>
+            <button class="hint-btn" onclick="showHint()">提示</button>
+            <button class="upload-btn" onclick="document.getElementById('photoUpload').click()">添加照片</button>
+        </div>
+        
+        <input type="file" id="photoUpload" accept="image/*" multiple style="display: none;" onchange="handlePhotoUpload(event)">
+        
+        <div class="photo-manager" id="photoManager" style="display: none;">
+            <h3>照片管理</h3>
+            <div class="photo-grid" id="photoGrid"></div>
+            <div class="photo-actions">
+                <button class="new-game-btn" onclick="applyPhotos()">使用这些照片</button>
+                <button class="hint-btn" onclick="hidePhotoManager()">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="game-over" id="gameOver">
+        <div class="game-over-content">
+            <h2>🎉 恭喜通关！</h2>
+            <p>最终得分: <span id="finalScore">0</span></p>
+            <p>用时: <span id="finalTime">00:00</span></p>
+            <button class="new-game-btn" onclick="startNewGame(); hideGameOver()">再来一局</button>
+        </div>
+    </div>
+
+    <script>
+        const BOARD_WIDTH = 10;
+        const BOARD_HEIGHT = 8;
+        const SYMBOLS = ['🍎', '🍌', '🍇', '🍊', '🍓', '🥝', '🍒', '🥭', '🍑', '🍍', '🥥', '🍈', '🍋', '🫐', '🍐', '🥑'];
+        
+        let board = [];
+        let selectedTiles = [];
+        let score = 0;
+        let startTime = Date.now();
+        let gameTimer;
+        let pairsRemaining = 0;
+        let gameActive = false;
+        let userPhotos = [];
+        let usingPhotos = false;
+
+        function initBoard() {
+            board = Array(BOARD_HEIGHT).fill().map(() => Array(BOARD_WIDTH).fill(null));
+            
+            // 生成配对的符号
+            const pairs = [];
+            const totalPairs = (BOARD_WIDTH * BOARD_HEIGHT) / 2;
+            const symbolsToUse = usingPhotos ? userPhotos : SYMBOLS;
+            
+            for (let i = 0; i < totalPairs; i++) {
+                const symbol = symbolsToUse[i % symbolsToUse.length];
+                pairs.push(symbol, symbol);
+            }
+            
+            // 随机打乱
+            for (let i = pairs.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [pairs[i], pairs[j]] = [pairs[j], pairs[i]];
+            }
+            
+            // 填充棋盘
+            let index = 0;
+            for (let row = 0; row < BOARD_HEIGHT; row++) {
+                for (let col = 0; col < BOARD_WIDTH; col++) {
+                    board[row][col] = pairs[index++];
+                }
+            }
+            
+            pairsRemaining = totalPairs;
+            updatePairsDisplay();
+        }
+
+        function renderBoard() {
+            const gameBoard = document.getElementById('gameBoard');
+            gameBoard.innerHTML = '';
+            
+            for (let row = 0; row < BOARD_HEIGHT; row++) {
+                for (let col = 0; col < BOARD_WIDTH; col++) {
+                    const tile = document.createElement('div');
+                    tile.className = 'tile';
+                    tile.dataset.row = row;
+                    tile.dataset.col = col;
+                    
+                    if (board[row][col]) {
+                        if (usingPhotos) {
+                            tile.className += ' photo-tile';
+                            const img = document.createElement('img');
+                            img.src = board[row][col];
+                            img.alt = 'Photo';
+                            tile.appendChild(img);
+                        } else {
+                            tile.textContent = board[row][col];
+                        }
+                        tile.onclick = () => selectTile(row, col);
+                    } else {
+                        tile.className += ' empty';
+                    }
+                    
+                    gameBoard.appendChild(tile);
+                }
+            }
+        }
+
+        function selectTile(row, col) {
+            if (!gameActive || !board[row][col]) return;
+            
+            const tile = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            
+            // 如果已经选中，取消选中
+            if (selectedTiles.some(t => t.row === row && t.col === col)) {
+                selectedTiles = selectedTiles.filter(t => !(t.row === row && t.col === col));
+                tile.classList.remove('selected');
+                return;
+            }
+            
+            // 如果已经选中了两个，清空选择
+            if (selectedTiles.length >= 2) {
+                clearSelection();
+            }
+            
+            selectedTiles.push({row, col});
+            tile.classList.add('selected');
+            
+            if (selectedTiles.length === 2) {
+                setTimeout(checkMatch, 300);
+            }
+        }
+
+        function checkMatch() {
+            const [tile1, tile2] = selectedTiles;
+            
+            if (board[tile1.row][tile1.col] === board[tile2.row][tile2.col]) {
+                if (canConnect(tile1, tile2)) {
+                    // 匹配成功
+                    board[tile1.row][tile1.col] = null;
+                    board[tile2.row][tile2.col] = null;
+                    
+                    score += 100;
+                    pairsRemaining--;
+                    
+                    updateScore();
+                    updatePairsDisplay();
+                    
+                    // 显示连线效果
+                    showConnection(tile1, tile2);
+                    
+                    setTimeout(() => {
+                        renderBoard();
+                        clearSelection();
+                        
+                        if (pairsRemaining === 0) {
+                            gameWon();
+                        }
+                    }, 500);
+                } else {
+                    // 无法连接
+                    setTimeout(clearSelection, 500);
+                }
+            } else {
+                // 不匹配
+                setTimeout(clearSelection, 500);
+            }
+        }
+
+        function canConnect(tile1, tile2) {
+            // 简化版连接检测：检查是否可以通过最多两次转弯连接
+            return canConnectWithTurns(tile1, tile2, 0) || 
+                   canConnectWithTurns(tile1, tile2, 1) || 
+                   canConnectWithTurns(tile1, tile2, 2);
+        }
+
+        function canConnectWithTurns(tile1, tile2, maxTurns) {
+            if (maxTurns === 0) {
+                return canConnectStraight(tile1, tile2);
+            }
+            
+            // 尝试通过中间点连接
+            for (let row = 0; row < BOARD_HEIGHT; row++) {
+                for (let col = 0; col < BOARD_WIDTH; col++) {
+                    if (!board[row][col] || (row === tile1.row && col === tile1.col) || (row === tile2.row && col === tile2.col)) {
+                        const midPoint = {row, col};
+                        if (canConnectWithTurns(tile1, midPoint, maxTurns - 1) && 
+                            canConnectWithTurns(midPoint, tile2, maxTurns - 1)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function canConnectStraight(tile1, tile2) {
+            // 检查是否在同一行或同一列，且中间无障碍
+            if (tile1.row === tile2.row) {
+                const minCol = Math.min(tile1.col, tile2.col);
+                const maxCol = Math.max(tile1.col, tile2.col);
+                for (let col = minCol + 1; col < maxCol; col++) {
+                    if (board[tile1.row][col]) return false;
+                }
+                return true;
+            }
+            
+            if (tile1.col === tile2.col) {
+                const minRow = Math.min(tile1.row, tile2.row);
+                const maxRow = Math.max(tile1.row, tile2.row);
+                for (let row = minRow + 1; row < maxRow; row++) {
+                    if (board[row][tile1.col]) return false;
+                }
+                return true;
+            }
+            
+            return false;
+        }
+
+        function showConnection(tile1, tile2) {
+            const board = document.getElementById('gameBoard');
+            const rect1 = document.querySelector(`[data-row="${tile1.row}"][data-col="${tile1.col}"]`).getBoundingClientRect();
+            const rect2 = document.querySelector(`[data-row="${tile2.row}"][data-col="${tile2.col}"]`).getBoundingClientRect();
+            const boardRect = board.getBoundingClientRect();
+            
+            const line = document.createElement('div');
+            line.className = 'connection-line';
+            
+            const x1 = rect1.left + rect1.width / 2 - boardRect.left;
+            const y1 = rect1.top + rect1.height / 2 - boardRect.top;
+            const x2 = rect2.left + rect2.width / 2 - boardRect.left;
+            const y2 = rect2.top + rect2.height / 2 - boardRect.top;
+            
+            const length = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+            const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+            
+            line.style.width = length + 'px';
+            line.style.left = x1 + 'px';
+            line.style.top = y1 + 'px';
+            line.style.transformOrigin = '0 50%';
+            line.style.transform = `rotate(${angle}deg)`;
+            
+            board.appendChild(line);
+            
+            setTimeout(() => {
+                if (line.parentNode) {
+                    line.parentNode.removeChild(line);
+                }
+            }, 500);
+        }
+
+        function clearSelection() {
+            selectedTiles.forEach(tile => {
+                const element = document.querySelector(`[data-row="${tile.row}"][data-col="${tile.col}"]`);
+                if (element) {
+                    element.classList.remove('selected');
+                }
+            });
+            selectedTiles = [];
+        }
+
+        function updateScore() {
+            document.getElementById('score').textContent = score;
+        }
+
+        function updatePairsDisplay() {
+            document.getElementById('pairs').textContent = pairsRemaining;
+        }
+
+        function updateTimer() {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+            document.getElementById('time').textContent = `${minutes}:${seconds}`;
+        }
+
+        function startNewGame() {
+            clearInterval(gameTimer);
+            score = 0;
+            startTime = Date.now();
+            gameActive = true;
+            
+            initBoard();
+            renderBoard();
+            updateScore();
+            
+            gameTimer = setInterval(updateTimer, 1000);
+            updateTimer();
+        }
+
+        function showHint() {
+            if (!gameActive) return;
+            
+            // 找到第一对可以连接的瓷砖
+            for (let row1 = 0; row1 < BOARD_HEIGHT; row1++) {
+                for (let col1 = 0; col1 < BOARD_WIDTH; col1++) {
+                    if (!board[row1][col1]) continue;
+                    
+                    for (let row2 = row1; row2 < BOARD_HEIGHT; row2++) {
+                        for (let col2 = (row2 === row1 ? col1 + 1 : 0); col2 < BOARD_WIDTH; col2++) {
+                            if (!board[row2][col2]) continue;
+                            
+                            if (board[row1][col1] === board[row2][col2] && 
+                                canConnect({row: row1, col: col1}, {row: row2, col: col2})) {
+                                
+                                // 高亮显示提示
+                                const tile1 = document.querySelector(`[data-row="${row1}"][data-col="${col1}"]`);
+                                const tile2 = document.querySelector(`[data-row="${row2}"][data-col="${col2}"]`);
+                                
+                                tile1.style.animation = 'pulse 1s infinite';
+                                tile2.style.animation = 'pulse 1s infinite';
+                                
+                                setTimeout(() => {
+                                    tile1.style.animation = '';
+                                    tile2.style.animation = '';
+                                }, 3000);
+                                
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function gameWon() {
+            gameActive = false;
+            clearInterval(gameTimer);
+            
+            document.getElementById('finalScore').textContent = score;
+            document.getElementById('finalTime').textContent = document.getElementById('time').textContent;
+            document.getElementById('gameOver').style.display = 'flex';
+        }
+
+        function hideGameOver() {
+            document.getElementById('gameOver').style.display = 'none';
+        }
+
+        // 添加CSS动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); opacity: 1; }
+                50% { transform: scale(1.2); opacity: 0.7; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 启动游戏
+        startNewGame();
+
+        // 照片管理功能
+        function handlePhotoUpload(event) {
+            const files = event.target.files;
+            for (let file of files) {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        userPhotos.push(e.target.result);
+                        updatePhotoGrid();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+            
+            if (files.length > 0) {
+                document.getElementById('photoManager').style.display = 'block';
+            }
+        }
+
+        function updatePhotoGrid() {
+            const grid = document.getElementById('photoGrid');
+            grid.innerHTML = '';
+            
+            userPhotos.forEach((photo, index) => {
+                const item = document.createElement('div');
+                item.className = 'photo-item';
+                
+                const img = document.createElement('img');
+                img.src = photo;
+                img.alt = `Photo ${index + 1}`;
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-btn';
+                removeBtn.innerHTML = '×';
+                removeBtn.onclick = () => removePhoto(index);
+                
+                item.appendChild(img);
+                item.appendChild(removeBtn);
+                grid.appendChild(item);
+            });
+        }
+
+        function removePhoto(index) {
+            userPhotos.splice(index, 1);
+            updatePhotoGrid();
+        }
+
+        function applyPhotos() {
+            if (userPhotos.length < 2) {
+                alert('请至少上传2张照片才能开始游戏！');
+                return;
+            }
+            
+            usingPhotos = true;
+            hidePhotoManager();
+            startNewGame();
+        }
+
+        function hidePhotoManager() {
+            document.getElementById('photoManager').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
